@@ -77,7 +77,6 @@ Simply what we do is go to `pages` folder and add something like `about.js`
 
 import React from 'react'
 const AboutPage = () => <h1>About me!</h1>
-
 export default AboutPage
 ```
 
@@ -99,14 +98,202 @@ Below we will create a file to create dynamic pages using some Pokemon names.
 //gatsby-node.js
 exports.createPages = ({actions}) {
   const {createPage} = actions
-  const allPockemon = ["pikachu", "charizard", "squirtle"]
+  const allPockemon = ['pikachu', 'charizard', 'squirtle', 'balbasore', 'Eevee']
 
-  allPokemon.forEach(pokemon => {
+  allPokemon.forEach((pokemon, index) => {
     createPage({
       path: `/pokemons/${pokemon}`,
       component: require.resolve("./src/templates/pokemon.js"),
+      context: {pokemon, index}
     })
   });
 
 }
 ```
+
+```
+//src/templates/pockemon.js
+
+import React from 'react'
+
+export default({pageContext: {pokemon, index}}) => {
+ console.log(pageContext)
+ const {pokemon, index} = pageContext
+ return <h1> Pokemon: {pokemon} is number {index}</h1>
+}
+
+```
+
+Here we update index.js to list the Pokemon files
+
+```
+import React from 'react'
+import {Router} from '@reach/router'
+const IndexPage = () => <h1>Hello World!</h1>
+
+<Router>
+ <Pokemon path="/pokemons/:name" />
+</Router>
+
+export default IndexPage
+```
+
+Question: In gatsby-node. what happens if the list changes dynamically. 
+Answer: You need to rebuild the site again, and that is why you decide if some need to be dynamic vs static. Here are why some tools like Netlify are great to help and rebuild your site.
+
+We have seem how to create pages either manually or programmatically.
+
+# How do we have dynamic routes?
+
+One example would be an user dashboard. For that we need to always a base page and then anything that comes after that, we tell Gatsby to go to the page and read the routes there and render something else
+
+```js
+// /src/pages/user.js
+import React from "react"
+import { Router } from "@reach/router"
+
+const Timeline = () => <h2> Dynamic Timeline</h2>
+const Dashboard = () => <h2> Dynamic Dashboard</h2>
+
+const UserPage = () => (
+<>
+ <h1> User page</h1>
+  <Link to="/user/timeline">Timeline</Link>{' '}
+  <Link to="/user/dashboard">Dashboard</Link>
+ <Router>
+  <Timeline path="/user/timeline"/>
+  <Dashboard path="/user/dashboard"/>
+ </Router>
+ </>
+)
+
+export default UserPage
+```
+
+Updating gatsby-node
+
+```js
+//gatsby-node.js
+
+export.onCreatePage = ({page, actions}) => {
+ const { createPage } = actions
+  if (page.path.match(/^\/user\)) {
+   page.matchPath = '/user/*'
+   createPage(page)
+  }
+}
+
+exports.createPages = ({actions}) {
+  const { createPage } = actions
+  const allPockemon = ['pikachu', 'charizard', 'squirtle', 'balbasore', 'Eevee']
+
+  allPokemon.forEach((pokemon, index) => {
+    createPage({
+      path: `/pokemons/${pokemon}`,
+      component: require.resolve("./src/templates/pokemon.js"),
+      context: {pokemon, index}
+    })
+  })
+  
+}
+```
+
+after starting the server we can now we can visit localhost:8000/user/
+
+# Lets play with some data
+
+```js
+// /src/components/timeline.js
+import React from "react"
+
+const Timeline = () => {
+
+ const [status, setStatus] = useState('')
+ 
+ useEffect( () => {
+  fetch ('https://k4d.dev/netlify/functions/timeline')
+   .then(response => response.json() )
+    .then(timelineData => setTimeline(timelinedata))
+     .then(response => response.json())
+      .then(timelineData => response.json())
+       .then(timelineData => setTimeline(timelineData))
+    }, [])
+ }
+ 
+ return (
+  <div>
+   <h1>Timeline</h1>
+   <ul>
+    {timeline.map(t => (
+    <li key={t.id}>
+     <div>
+      <div>
+       <img src={t.user.profileImageUrl} alt={t.user.name} />
+      <div>
+       <p>{t.user.name}</p>
+       <p>@{t.user.screenName}</p>
+      </div>
+      </div>
+      
+      <div dangerouslySetInnerHTML={{__html: t.text }} />
+      </div>
+      </li>
+    )
+ )}
+ </ul>
+</div>
+}
+
+export default Timeline
+```
+
+We are importing Timeline component into user.js below
+
+```js
+// /src/pages/user.js
+import React from "react"
+import { Router } from "@reach/router"
+imoprt Timeline from '../components/timeline'
+
+const Dashboard = () => <h2> Dynamic Dashboard</h2>
+
+const UserPage = () => (
+<>
+ <h1> User page</h1>
+  <Link to="/user/timeline">Timeline</Link>{' '}
+  <Link to="/user/dashboard">Dashboard</Link>
+ <Router>
+  <Timeline path="/user/timeline"/>
+  <Dashboard path="/user/dashboard"/>
+ </Router>
+ </>
+)
+
+export default UserPage
+```
+
+There is a difference between createPage and createPages
+
+createPages is when Gatsby starts fresh is going to create all the pages on your website, now everytime the createPage is called the hook `exports.createPage` is called by Gatsby. If we need to change something in the already created page we use `exports.createPage`
+
+Brief overview of Authentication.
+- Create a private route and will accept a component.
+- if the user is not logged in, the user will go back to /user/login
+ - that is simplifying the behavior
+- using Netlify Khaled only needed about 50 lines of code to do validation. 
+
+
+Just in case restart the server :).
+
+## Interesting links
+
+https://stackoverflow.com/questions/31354559/using-node-js-require-vs-es6-import-export
+
+https://pokeapi.co/
+
+https://pixelastic.github.io/pokemonorbigdata/
+
+Validation:
+
+https://github.com/khaledgarbaya/rubbergoose
+
