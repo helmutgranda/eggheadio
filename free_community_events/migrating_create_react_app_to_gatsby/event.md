@@ -297,3 +297,9 @@ Validation:
 
 https://github.com/khaledgarbaya/rubbergoose
 
+LearnJamStack:
+
+https://learnjamstack.com/
+
+Twitter: https://twitter.com/khaled_garbaja
+
